@@ -1,4 +1,4 @@
-module top(GPIO, LEDG, LEDR, CLOCK_50, SMA_CLKOUT, KEY);
+module top(GPIO, LEDG, LEDR, CLOCK_50, SMA_CLKOUT, KEY, SRAM_ADDR, SRAM_DQ, SRAM_CE_N, SRAM_OE_N, SRAM_WE_N, SRAM_UB_N, SRAM_LB_N);
 inout  [35:0] GPIO;
 output [ 7:0] LEDG;
 output [17:0] LEDR;
@@ -6,139 +6,94 @@ input         CLOCK_50;
 input   [3:0] KEY;
 output        SMA_CLKOUT;
 
+output [19:0] SRAM_ADDR;
+inout  [15:0] SRAM_DQ;
 
-wire clk;
-wire locked;
-wire areset;
-wire rst;
-wire den;
-wire rev;
-wire disp;
+output        SRAM_CE_N;
+output        SRAM_OE_N;
+output        SRAM_WE_N;
+output        SRAM_UB_N;
+output        SRAM_LB_N;
 
-reg  [9:0] cnt_h;
-reg  [9:0] cnt_v;
-reg        hsync;
-reg        vsync;
-reg        hden;
-reg        vden;
 
-reg  [5:0] red;
-reg  [5:0] green;
-reg  [5:0] blue;
-reg        cnt;
+wire         rst;
+wire   [5:0] red;
+wire   [5:0] green;
+wire   [5:0] blue;
+wire   [9:0] x;
+wire   [8:0] y;
 
-//clock_25175 (rst, CLOCK_50, clk, locked);
+wire         init_done;
+reg          cnt;
 
-assign LEDG[0]     = locked;
-assign LEDG[1]     = rst;
+VGG644803(
+   .clk       (clk0),
+	.rst       (rst),
+   .red       (red),
+	.green     (green),
+	.blue      (blue),
+	.x         (x),
+	.y         (y),
+	.PIN_CLK   (GPIO[0]),
+	.PIN_HSYNC (GPIO[1]),
+	.PIN_VSYNC (GPIO[2]),
+	.PIN_RED   (GPIO[8:3]),
+	.PIN_GREEN (GPIO[14:9]),
+	.PIN_BLUE  (GPIO[20:15]),
+	.PIN_DEN   (GPIO[21]),
+	.PIN_REV   (GPIO[22]),
+	.PIN_DISP  (GPIO[23])
+);
+
+framebuffer(
+   .clk       (clk0),
+	.rst       (rst),
+	.init_done (init_done),
+   .red       (red),
+	.green     (green),
+	.blue      (blue),
+	.x         (x),
+	.y         (y),
+	.SRAM_ADDR (SRAM_ADDR),
+	.SRAM_DQ   (SRAM_DQ), 
+	.SRAM_CE_N (SRAM_CE_N),
+   .SRAM_OE_N (SRAM_OE_N),
+   .SRAM_WE_N (SRAM_WE_N),
+   .SRAM_UB_N (SRAM_UB_N),
+   .SRAM_LB_N (SRAM_LB_N)
+);
+
+sram_init (
+   .clk       (clk0),
+	.rst       (rst),
+	.init_done (init_done),
+	.SRAM_ADDR (SRAM_ADDR),
+	.SRAM_DQ   (SRAM_DQ), 
+	.SRAM_CE_N (SRAM_CE_N),
+   .SRAM_OE_N (SRAM_OE_N),
+   .SRAM_WE_N (SRAM_WE_N),
+   .SRAM_UB_N (SRAM_UB_N),
+   .SRAM_LB_N (SRAM_LB_N)
+);
+
+wire   clk0, clk1;
+
+assign rst         = ~KEY[0];
+assign clk0        = cnt;
+
+assign LEDG[0]     = rst;
+assign LEDG[1]     = init_done;
 assign LEDG[7:2]   = 0;
 assign LEDR        = 0;
-assign SMA_CLKOUT  = clk;
-assign rst         = ~KEY[0];
-assign den         = hden & vden;
-assign rev         = 1;
-assign disp        = 1;
-assign clk         = cnt;
+assign SMA_CLKOUT  = clk0;
 
-assign GPIO[0]     = clk;
-assign GPIO[1]     = ~hsync;
-assign GPIO[2]     = ~vsync;
-assign GPIO[8:3]   = red[5:0];
-assign GPIO[14:9]  = green[5:0];
-assign GPIO[20:15] = blue[5:0];
-assign GPIO[21]    = den;
-assign GPIO[22]    = rev;
-assign GPIO[23]    = disp;
-
-always @ (posedge CLOCK_50) begin
-  cnt       <= ~cnt;
-end
-
-always @ (posedge clk or posedge rst) begin
+always @ (posedge CLOCK_50 or posedge rst) begin
   if (rst) begin
-    cnt_h   <= 0;
-    cnt_v   <= 0;
-	 hsync   <= 0;
-	 vsync   <= 0;
-	 hden    <= 0;
-	 vden    <= 0;
-	 red     <= 6'h00;
-	 green   <= 6'h00;
-	 blue    <= 6'h00;
+    cnt       <= 0;
+	 //init_done <= 1;
   end
   else begin
-    case (cnt_h)
-	   16:   begin
-		  red     <= 6'hff;
-	     green   <= 6'h00;
-	     blue    <= 6'h00;
-		end
-		96:   begin
-		  red     <= 6'h00;
-	     green   <= 6'hff;
-	     blue    <= 6'h00;
-		end
-		176:   begin
-		  red     <= 6'h00;
-	     green   <= 6'h00;
-	     blue    <= 6'hff;
-		end
-		256:   begin
-		  red     <= 6'hff;
-	     green   <= 6'h00;
-	     blue    <= 6'hff;
-		end
-		336:   begin
-		  red     <= 6'h00;
-	     green   <= 6'hff;
-	     blue    <= 6'hff;
-		end
-		416:   begin
-		  red     <= 6'hff;
-	     green   <= 6'hff;
-	     blue    <= 6'h00;
-		end
-		496:   begin
-		  red     <= 6'h00;
-	     green   <= 6'h00;
-	     blue    <= 6'h00;
-		end
-		576:   begin
-		  red     <= 6'hff;
-	     green   <= 6'hff;
-	     blue    <= 6'hff;
-		end
-		default: ;
-	 endcase
-
-    case (cnt_h)	   
-		16:  hden  <= 1;
-		656: hden  <= 0;
-		704: hsync <= 1;
-		736: hsync <= 0;
-      default: ;
-	 endcase
-	 
-	 case (cnt_v)
-	   10:   vden <= 1;
-		490:  vden <= 0;
-		506:  vsync <= 1;
-		509:  vsync <= 0;
-      default: ;	   
-	 endcase
-	 
-    if (cnt_h == 799) begin
-	   cnt_h   <= 0;
-		if (cnt_v == 524) begin
-		  cnt_v <= 0;
-		end
-		else begin
-	     cnt_v <= cnt_v + 1;
-		end
-	 end
-	 else begin
-      cnt_h   <= cnt_h + 1;
-	 end
+    cnt       <= ~cnt;
   end
 end
 
