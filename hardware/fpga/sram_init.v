@@ -1,8 +1,7 @@
-module sram_init(clk50, rst, enable, init_done, SRAM_ADDR, SRAM_DQ, SRAM_CE_N, SRAM_OE_N, SRAM_WE_N, SRAM_UB_N, SRAM_LB_N);
+module sram_init(clk50, rst, enable, SRAM_ADDR, SRAM_DQ, SRAM_CE_N, SRAM_OE_N, SRAM_WE_N, SRAM_UB_N, SRAM_LB_N);
 input         clk50;
 input         rst;
 input         enable;
-output        init_done;
 output [19:0] SRAM_ADDR;
 output [15:0] SRAM_DQ;
 
@@ -19,14 +18,12 @@ reg     [9:0] y;
 reg     [7:0] red;
 reg     [7:0] green;
 reg     [7:0] blue;
-reg           init_done_r;
 reg    [19:0] sram_addr;
 
 wire   [12:0] c;
 
 assign c = x + y + cool[23:20];
 
-assign init_done = init_done_r;
 
 assign SRAM_CE_N = enable ? 0                                 : 1'bz;
 assign SRAM_OE_N = enable ? 1                                 : 1'bz;
@@ -38,7 +35,6 @@ assign SRAM_ADDR = enable ? sram_addr                         : 20'hzzzzz;
 
 always @ (posedge clk50 or posedge rst) begin
   if (rst) begin
-    init_done_r       <= 1;
 	 sram_addr         <= 0;
 	 x                 <= 0;
 	 y                 <= 0;

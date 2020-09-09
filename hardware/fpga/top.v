@@ -23,7 +23,6 @@ wire   [5:0] blue;
 wire   [9:0] x;
 wire   [8:0] y;
 
-wire         init_done;
 reg          cnt;
 
 VGG644803(
@@ -49,7 +48,7 @@ VGG644803(
 framebuffer(
    .clk       (CLOCK_50),
 	.rst       (rst),
-	.enable    (init_done & cnt == 0),
+	.enable    (cnt == 0),
    .red       (red),
 	.green     (green),
 	.blue      (blue),
@@ -64,32 +63,49 @@ framebuffer(
    .SRAM_LB_N (SRAM_LB_N)
 );
 
-sram_init (
+draw(
    .clk50     (CLOCK_50),
 	.rst       (rst),
-	.enable    (cnt == 1),   // ~init_done
-	.init_done (init_done),
+	.enable    (cnt == 1),
 	.SRAM_ADDR (SRAM_ADDR),
 	.SRAM_DQ   (SRAM_DQ), 
 	.SRAM_CE_N (SRAM_CE_N),
    .SRAM_OE_N (SRAM_OE_N),
    .SRAM_WE_N (SRAM_WE_N),
    .SRAM_UB_N (SRAM_UB_N),
-   .SRAM_LB_N (SRAM_LB_N)
+   .SRAM_LB_N (SRAM_LB_N)	
 );
+
+//sram_init (
+//   .clk50     (CLOCK_50),
+//	.rst       (rst),
+//	.enable    (cnt == 1),
+//	.SRAM_ADDR (SRAM_ADDR),
+//	.SRAM_DQ   (SRAM_DQ), 
+//	.SRAM_CE_N (SRAM_CE_N),
+//   .SRAM_OE_N (SRAM_OE_N),
+//   .SRAM_WE_N (SRAM_WE_N),
+//   .SRAM_UB_N (SRAM_UB_N),
+//   .SRAM_LB_N (SRAM_LB_N)
+//);
+//
+//fifo #(
+//    .SIZE(16),
+//	 .WIDTH(16)
+//  )
+//  command_fifo (
+//  );
 
 assign rst         = ~KEY[0];
 
 assign LEDG[0]     = rst;
-assign LEDG[1]     = init_done;
-assign LEDG[7:2]   = 0;
+assign LEDG[7:1]   = 0;
 assign LEDR        = 0;
 //assign SMA_CLKOUT  = clk0;
 
 always @ (negedge CLOCK_50 or posedge rst) begin
   if (rst) begin
     cnt       <= 0;
-	 //init_done <= 1;
   end
   else begin
     cnt       <= ~cnt;
