@@ -27,8 +27,9 @@ wire         init_done;
 reg          cnt;
 
 VGG644803(
-   .clk       (clk0),
+   .clk50     (CLOCK_50),
 	.rst       (rst),
+	.enable    (cnt == 0),
    .red       (red),
 	.green     (green),
 	.blue      (blue),
@@ -46,9 +47,9 @@ VGG644803(
 );
 
 framebuffer(
-   .clk       (clk0),
+   .clk       (CLOCK_50),
 	.rst       (rst),
-	.init_done (init_done),
+	.enable    (init_done & cnt == 0),
    .red       (red),
 	.green     (green),
 	.blue      (blue),
@@ -64,8 +65,9 @@ framebuffer(
 );
 
 sram_init (
-   .clk       (clk0),
+   .clk50     (CLOCK_50),
 	.rst       (rst),
+	.enable    (cnt == 1),   // ~init_done
 	.init_done (init_done),
 	.SRAM_ADDR (SRAM_ADDR),
 	.SRAM_DQ   (SRAM_DQ), 
@@ -76,18 +78,15 @@ sram_init (
    .SRAM_LB_N (SRAM_LB_N)
 );
 
-wire   clk0, clk1;
-
 assign rst         = ~KEY[0];
-assign clk0        = cnt;
 
 assign LEDG[0]     = rst;
 assign LEDG[1]     = init_done;
 assign LEDG[7:2]   = 0;
 assign LEDR        = 0;
-assign SMA_CLKOUT  = clk0;
+//assign SMA_CLKOUT  = clk0;
 
-always @ (posedge CLOCK_50 or posedge rst) begin
+always @ (negedge CLOCK_50 or posedge rst) begin
   if (rst) begin
     cnt       <= 0;
 	 //init_done <= 1;

@@ -1,7 +1,8 @@
-module VGG644803(clk, rst, red, green, blue, x, y, PIN_CLK, PIN_HSYNC, PIN_VSYNC, PIN_RED, PIN_GREEN, PIN_BLUE, PIN_DEN, PIN_REV, PIN_DISP);
+module VGG644803(clk50, rst, enable, red, green, blue, x, y, PIN_CLK, PIN_HSYNC, PIN_VSYNC, PIN_RED, PIN_GREEN, PIN_BLUE, PIN_DEN, PIN_REV, PIN_DISP);
 // Module interface
-input        clk;       // 25 Mhz clock input
+input        clk50;     // 50 Mhz clock input
 input        rst;       // Active high reset
+input        enable;
 input  [5:0] red;       // Red signal
 input  [5:0] green;     // Green signal
 input  [5:0] blue;      // Blue signal
@@ -37,7 +38,7 @@ reg  [5:0] red_r;
 reg  [5:0] green_r;
 reg  [5:0] blue_r;
 
-assign clk_w       = clk;
+assign clk_w       = enable;
 assign den_w       = hden_r & vden_r;
 assign rev_w       = 1;
 assign disp_w      = 1;
@@ -55,58 +56,62 @@ assign PIN_DEN     = den_w;
 assign PIN_REV     = rev_w;
 assign PIN_DISP    = disp_w;
 
-always @ (posedge clk or posedge rst) begin
+always @ (posedge clk50 or posedge rst) begin
   if (rst) begin
-    cnt_h_r         <= 0;
-    cnt_v_r         <= 0;
-	 hsync_r         <= 0;
-	 vsync_r         <= 0;
-	 hden_r          <= 0;
-	 vden_r          <= 0;
+    cnt_h_r           <= 0;
+    cnt_v_r           <= 0;
+	 hsync_r           <= 0;
+	 vsync_r           <= 0;
+	 hden_r            <= 0;
+	 vden_r            <= 0;
   end
   else begin
-    case (cnt_h_r)	   
-      16:  hden_r   <= 1;
-      656: hden_r   <= 0;
-      720: hsync_r  <= 1;
-      752: hsync_r  <= 0;
-      default: ;
-    endcase
+    if (enable) begin
+      case (cnt_h_r)	   
+        16:  hden_r   <= 1;
+        656: hden_r   <= 0;
+        720: hsync_r  <= 1;
+        752: hsync_r  <= 0;
+        default: ;
+      endcase
 	 
-    case (cnt_v_r)
-      10:   vden_r  <= 1;
-      490:  vden_r  <= 0;
-      506:  vsync_r <= 1;
-      509:  vsync_r <= 0;
-      default: ;	   
-    endcase
+      case (cnt_v_r)
+        10:   vden_r  <= 1;
+        490:  vden_r  <= 0;
+        506:  vsync_r <= 1;
+        509:  vsync_r <= 0;
+        default: ;	   
+      endcase
 	 
-    if (cnt_h_r == 799) begin
-      cnt_h_r       <= 0;
-      if (cnt_v_r == 524) begin
-        cnt_v_r     <= 0;
+      if (cnt_h_r == 799) begin
+        cnt_h_r       <= 0;
+        if (cnt_v_r == 524) begin
+          cnt_v_r     <= 0;
+        end
+        else begin
+          cnt_v_r     <= cnt_v_r + 1;
+        end
       end
       else begin
-        cnt_v_r     <= cnt_v_r + 1;
+        cnt_h_r       <= cnt_h_r + 1;
       end
-    end
-    else begin
-      cnt_h_r       <= cnt_h_r + 1;
-    end
-end
+	 end
+  end
 end
 
 
-always @ (negedge clk or posedge rst) begin
+always @ (negedge clk50 or posedge rst) begin
   if (rst) begin
-	 red_r           <= 6'h00;
-	 green_r         <= 6'h00;
-	 blue_r          <= 6'h00;
+	 red_r             <= 6'h00;
+	 green_r           <= 6'h00;
+	 blue_r            <= 6'h00;
   end
   else begin
-    red_r           <= red;
-    green_r         <= green;
-    blue_r          <= blue;
+    if (enable) begin
+      red_r           <= red;
+      green_r         <= green;
+      blue_r          <= blue;
+	 end
   end
 end
 
