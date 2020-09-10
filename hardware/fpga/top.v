@@ -15,7 +15,7 @@ output        SRAM_WE_N;
 output        SRAM_UB_N;
 output        SRAM_LB_N;
 
-
+wire         init_done;
 wire         rst;
 wire   [5:0] red;
 wire   [5:0] green;
@@ -63,10 +63,29 @@ framebuffer(
    .SRAM_LB_N (SRAM_LB_N)
 );
 
+sram_init (
+   .clk50     (CLOCK_50),
+	.rst       (rst),
+	.enable    (cnt == 1 && !init_done),
+	.init_done (init_done),
+	.SRAM_ADDR (SRAM_ADDR),
+	.SRAM_DQ   (SRAM_DQ), 
+	.SRAM_CE_N (SRAM_CE_N),
+   .SRAM_OE_N (SRAM_OE_N),
+   .SRAM_WE_N (SRAM_WE_N),
+   .SRAM_UB_N (SRAM_UB_N),
+   .SRAM_LB_N (SRAM_LB_N)
+);
+
 draw(
    .clk50     (CLOCK_50),
 	.rst       (rst),
-	.enable    (cnt == 1),
+	.enable    (cnt == 1 && init_done),
+	.x_from    (x_from_r),
+   .y_from    (y_from_r),
+   .x_to      (x_to_r),
+   .y_to      (y_to_r),
+   .draw_en   (~KEY[1]),
 	.SRAM_ADDR (SRAM_ADDR),
 	.SRAM_DQ   (SRAM_DQ), 
 	.SRAM_CE_N (SRAM_CE_N),
@@ -76,18 +95,10 @@ draw(
    .SRAM_LB_N (SRAM_LB_N)	
 );
 
-//sram_init (
-//   .clk50     (CLOCK_50),
-//	.rst       (rst),
-//	.enable    (cnt == 1),
-//	.SRAM_ADDR (SRAM_ADDR),
-//	.SRAM_DQ   (SRAM_DQ), 
-//	.SRAM_CE_N (SRAM_CE_N),
-//   .SRAM_OE_N (SRAM_OE_N),
-//   .SRAM_WE_N (SRAM_WE_N),
-//   .SRAM_UB_N (SRAM_UB_N),
-//   .SRAM_LB_N (SRAM_LB_N)
-//);
+reg  [8:0]  x_from_r;
+reg  [7:0]  y_from_r;
+reg  [8:0]  x_to_r;
+reg  [7:0]  y_to_r;
 //
 //fifo #(
 //    .SIZE(16),
@@ -106,9 +117,17 @@ assign LEDR        = 0;
 always @ (negedge CLOCK_50 or posedge rst) begin
   if (rst) begin
     cnt       <= 0;
+	 x_from_r  <= 0;
+	 y_from_r  <= 0;
+	 x_to_r    <= 100;
+	 y_to_r    <= 100;
   end
   else begin
     cnt       <= ~cnt;
+	 x_from_r  <= x_from_r + 1;
+	 y_from_r  <= y_from_r + 2;
+	 x_to_r    <= x_to_r + 3;
+	 y_to_r    <= y_to_r + 4;
   end
 end
 
