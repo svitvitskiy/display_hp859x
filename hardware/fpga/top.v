@@ -1,4 +1,4 @@
-module top(GPIO, LEDG, LEDR, CLOCK_50, SMA_CLKOUT, KEY, SRAM_ADDR, SRAM_DQ, SRAM_CE_N, SRAM_OE_N, SRAM_WE_N, SRAM_UB_N, SRAM_LB_N);
+module top(GPIO, LEDG, LEDR, CLOCK_50, SMA_CLKOUT, KEY, SRAM_ADDR, SRAM_DQ, SRAM_CE_N, SRAM_OE_N, SRAM_WE_N, SRAM_UB_N, SRAM_LB_N, VGA_CLK, VGA_HS, VGA_VS, VGA_R, VGA_G, VGA_B);
 inout  [35:0] GPIO;
 output [ 7:0] LEDG;
 output [17:0] LEDR;
@@ -15,6 +15,13 @@ output        SRAM_WE_N;
 output        SRAM_UB_N;
 output        SRAM_LB_N;
 
+output       VGA_CLK;
+output       VGA_HS;
+output       VGA_VS;
+output [7:0] VGA_R;
+output [7:0] VGA_G;
+output [7:0] VGA_B;
+
 wire         init_done;
 wire         rst;
 wire   [5:0] red;
@@ -25,7 +32,7 @@ wire   [8:0] y;
 
 reg          cnt;
 
-VGG644803(
+vga(
    .clk50     (CLOCK_50),
 	.rst       (rst),
 	.enable    (cnt == 0),
@@ -34,16 +41,33 @@ VGG644803(
 	.blue      (blue),
 	.x         (x),
 	.y         (y),
-	.PIN_CLK   (GPIO[0]),
-	.PIN_HSYNC (GPIO[1]),
-	.PIN_VSYNC (GPIO[2]),
-	.PIN_RED   (GPIO[8:3]),
-	.PIN_GREEN (GPIO[14:9]),
-	.PIN_BLUE  (GPIO[20:15]),
-	.PIN_DEN   (GPIO[21]),
-	.PIN_REV   (GPIO[22]),
-	.PIN_DISP  (GPIO[23])
+   .VGA_CLK   (VGA_CLK),
+	.VGA_HS    (VGA_HS),
+	.VGA_VS    (VGA_VS),
+	.VGA_R     (VGA_R),
+	.VGA_G     (VGA_G),
+	.VGA_B     (VGA_B)
 );
+
+//VGG644803(
+//   .clk50     (CLOCK_50),
+//	.rst       (rst),
+//	.enable    (cnt == 0),
+//   .red       (red),
+//	.green     (green),
+//	.blue      (blue),
+//	.x         (x),
+//	.y         (y),
+//	.PIN_CLK   (GPIO[0]),
+//	.PIN_HSYNC (GPIO[1]),
+//	.PIN_VSYNC (GPIO[2]),
+//	.PIN_RED   (GPIO[8:3]),
+//	.PIN_GREEN (GPIO[14:9]),
+//	.PIN_BLUE  (GPIO[20:15]),
+//	.PIN_DEN   (GPIO[21]),
+//	.PIN_REV   (GPIO[22]),
+//	.PIN_DISP  (GPIO[23])
+//);
 
 framebuffer(
    .clk       (CLOCK_50),
