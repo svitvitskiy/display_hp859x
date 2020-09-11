@@ -11,7 +11,7 @@ input  [8:0] y;         // y coordinate of a pixel
 output [19:0] SRAM_ADDR;
 input  [15:0] SRAM_DQ;
 
-reg    [25:0] intro_cnt;
+reg    [26:0] intro_cnt;
 reg           cnt;
 reg           do_sram;
 
@@ -26,16 +26,31 @@ wire    [5:0] green_t;
 wire    [5:0] blue_t;
 wire          enable;
 
-assign        SRAM_CE_N = enable ? 0 : 1'bz;
-assign        SRAM_OE_N = enable ? 0 : 1'bz;
-assign        SRAM_WE_N = enable ? 1 : 1'bz;
-assign        SRAM_UB_N = enable ? 0 : 1'bz;
-assign        SRAM_LB_N = enable ? 0 : 1'bz;
-assign        SRAM_ADDR = enable ? (y*640 + x) : 20'hzzzzz;
+assign        SRAM_CE_N = enable ?             0 : 1'bz;
+assign        SRAM_OE_N = enable ?             0 : 1'bz;
+assign        SRAM_WE_N = enable ?             1 : 1'bz;
+assign        SRAM_UB_N = enable ?             0 : 1'bz;
+assign        SRAM_LB_N = enable ?             0 : 1'bz;
+assign        SRAM_ADDR = enable ? (y * 640 + x) : 20'hzzzzz;
 
-assign red_t       = enable ? (             (x < 80) || (x >= 240 && x < 320) || (x >= 560) ? 6'hff : 6'h00) : 6'hzz;
-assign green_t     = enable ? ((x >= 80  && x < 160) || (x >= 320 && x < 400) || (x >= 560) ? 6'hff : 6'h00) : 6'hzz;
-assign blue_t      = enable ? ((x >= 160 && x < 240) || (x >= 400 && x < 480) || (x >= 560) ? 6'hff : 6'h00) : 6'hzz;
+//   |  0  |  80 | 160 | 240 | 320 | 400 | 480 | 560 |
+// R |  X  |     |     |  X  |     |     |     |  X  |
+// G |     |  X  |     |     |  X  |     |     |  X  |
+// B |     |     |  X  |     |     |  X  |     |  X  |
+//   | red |green|blue | red |green|blue |white|black|
+//
+wire   red_h, red_v, blue_h, blue_w, green_h, green_w;
+assign red_h       =              (x < 80) || (x >= 240 && x < 320) || (x >= 560);
+assign green_h     = (x >= 80  && x < 160) || (x >= 320 && x < 400) || (x >= 560);
+assign blue_h      = (x >= 160 && x < 240) || (x >= 400 && x < 480) || (x >= 560);
+assign red_v       =              (y < 80) || (y >= 240 && y < 320);
+assign green_v     = (y >= 80  && y < 160) || (y >= 320 && y < 400);
+assign blue_v      = (y >= 160 && y < 240) || (y >= 400 && y < 480);
+
+
+assign red_t       = enable ? (  red_h |   red_v ? 6'hff : 6'h00) : 6'hzz;
+assign green_t     = enable ? (green_h | green_v ? 6'hff : 6'h00) : 6'hzz;
+assign blue_t      = enable ? ( blue_h |  blue_v ? 6'hff : 6'h00) : 6'hzz;
 
 assign red         = enable ? (do_sram ? SRAM_DQ[15:11] : red_t)   : 6'hzz;
 assign green       = enable ? (do_sram ? SRAM_DQ [10:5] : green_t) : 6'hzz;
@@ -50,7 +65,7 @@ always @ (posedge clk or posedge rst) begin
   else begin
     if (enable) begin
       if (!do_sram) begin
-        if (intro_cnt == 26'h3ffffff) begin
+        if (intro_cnt == 27'h7ffffff) begin
 	       do_sram   <= 1;
 	     end
 	     else begin

@@ -22,7 +22,6 @@ output [7:0] VGA_R;
 output [7:0] VGA_G;
 output [7:0] VGA_B;
 
-wire         init_done;
 wire         rst;
 wire   [5:0] red;
 wire   [5:0] green;
@@ -90,8 +89,9 @@ framebuffer(
 sram_init (
    .clk50     (CLOCK_50),
 	.rst       (rst),
-	.enable    (cnt == 1 && !init_done),
-	.init_done (init_done),
+	.enable    (init_enable),
+	.busy      (init_busy),
+	.SRAM_EN   (cnt == 1 && !init_done),
 	.SRAM_ADDR (SRAM_ADDR),
 	.SRAM_DQ   (SRAM_DQ), 
 	.SRAM_CE_N (SRAM_CE_N),
@@ -101,57 +101,102 @@ sram_init (
    .SRAM_LB_N (SRAM_LB_N)
 );
 
-draw(
-   .clk50     (CLOCK_50),
-	.rst       (rst),
-	.enable    (cnt == 1 && init_done),
-	.x_from    (x_from_r),
-   .y_from    (y_from_r),
-   .x_to      (x_to_r),
-   .y_to      (y_to_r),
-   .draw_en   (~KEY[1]),
-	.SRAM_ADDR (SRAM_ADDR),
-	.SRAM_DQ   (SRAM_DQ), 
-	.SRAM_CE_N (SRAM_CE_N),
-   .SRAM_OE_N (SRAM_OE_N),
-   .SRAM_WE_N (SRAM_WE_N),
-   .SRAM_UB_N (SRAM_UB_N),
-   .SRAM_LB_N (SRAM_LB_N)	
-);
+wire        LRFD;
+wire        LDAV;
+wire [14:0] DATA;
 
-reg  [8:0]  x_from_r;
-reg  [7:0]  y_from_r;
-reg  [8:0]  x_to_r;
-reg  [7:0]  y_to_r;
-//
-//fifo #(
-//    .SIZE(16),
-//	 .WIDTH(16)
-//  )
-//  command_fifo (
-//  );
+assign GPIO[1]  = LRFD;
+assign LDAV     = GPIO[0];
+assign DATA[14:0] = {
+GPIO[3], GPIO[2], GPIO[5], GPIO[4], GPIO[7],
+GPIO[6], GPIO[9], GPIO[8], GPIO[11], GPIO[10],
+GPIO[13], GPIO[12], GPIO[15], GPIO[14], 1'b0
+};
+
+//draw_tester(
+//   .clk       (CLOCK_50),
+//	.rst       (rst),
+//	.restart   (init_enable),
+//	.LRFD      (LRFD),
+//	.LDAV      (LDAV),
+//	.DATA      (DATA)
+//);
+
+hp1349a_top (
+   .clk       (CLOCK_50),
+   .rst       (rst),
+   .BUS_LDAV  (LDAV),
+   .BUS_LRFD  (LRFD),
+   .BUS_DATA  (DATA),
+   .FB_EN     (cnt == 1 && init_done),
+	.FB_ADDR   (SRAM_ADDR),
+	.FB_DQ     (SRAM_DQ),
+	.FB_CE_N   (SRAM_CE_N),
+	.FB_OE_N   (SRAM_OE_N),
+	.FB_WE_N   (SRAM_WE_N),
+	.FB_UB_N   (SRAM_UB_N),
+	.FB_LB_N   (SRAM_LB_N),
+	.read_state_r(LEDR[2:0])
+);
 
 assign rst         = ~KEY[0];
 
 assign LEDG[0]     = rst;
-assign LEDG[7:1]   = 0;
-assign LEDR        = 0;
-//assign SMA_CLKOUT  = clk0;
+assign LEDG[1]     = KEY[1];
+assign LEDG[7]     = LRFD;
+assign LEDG[6:5]   = 0;
+assign LEDR[17:3]  = 0;
 
 always @ (negedge CLOCK_50 or posedge rst) begin
   if (rst) begin
-    cnt       <= 0;
-	 x_from_r  <= 0;
-	 y_from_r  <= 0;
-	 x_to_r    <= 100;
-	 y_to_r    <= 100;
+    cnt       <= 0;	 
   end
   else begin
     cnt       <= ~cnt;
-	 x_from_r  <= x_from_r + 1;
-	 y_from_r  <= y_from_r + 2;
-	 x_to_r    <= x_to_r + 3;
-	 y_to_r    <= y_to_r + 4;
+  end
+end
+
+reg   [2:0] state;
+reg         init_enable;
+wire        init_busy;
+reg  [15:0] timeout;
+wire        init_done;
+
+assign init_done = state == 3;
+assign LEDG[4:2] = state;
+
+always @ (posedge CLOCK_50 or posedge rst) begin
+  if (rst) begin
+    state         <= 0;
+	 init_enable   <= 0;
+	 timeout       <= 0;
+  end
+  else begin
+    case(state)
+	 0: begin
+	   init_enable <= 1;
+		state       <= 1;
+	 end
+	 1:
+	   state       <= 2; // hold off
+	 2: begin
+	   init_enable <= 0;
+		if (!init_busy)
+	     state     <= 3;
+    end
+	 3: begin
+      if (!KEY[1]) begin
+		  state     <= 4;
+		  timeout   <= 16'hffff;
+		end
+	 end
+    default: begin
+	   if (timeout == 0)
+		  state     <= 0;
+		else
+		  timeout   <= timeout - 1;
+    end	 
+	 endcase
   end
 end
 
