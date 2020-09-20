@@ -14,12 +14,11 @@ reg     [2:0] read_state_r;
 
 reg           fifo_write_en_r;
 reg    [15:0] fifo_write_data_r;
+reg     [7:0] timeout_r;
 
 assign LRFD            = ~rfd_r;
 assign fifo_write_en   = fifo_write_en_r;
 assign fifo_write_data = fifo_write_data_r;
-
-reg    [7:0]   timeout_r;
 
 // Recieve logic
 always @ (posedge clk or posedge rst) begin
@@ -35,52 +34,32 @@ always @ (posedge clk or posedge rst) begin
 	   if (LDAV) begin
 	     rfd_r             <= 1;
 		  read_state_r      <= 1;
-		  timeout_r         <= 8'b11111111;
-	   end
-	 1: begin
-	   if (timeout_r == 0) begin
-		  read_state_r      <= 2;
-		  timeout_r         <= 8'b11111111;
-		end
-		else
-		  timeout_r         <= timeout_r - 1;
-	 end
-	 2:
+	   end	
+	 1:
 	   if (!LDAV) begin
-		  read_state_r      <= 3;
-		  timeout_r         <= 8'b11111111;
+		  read_state_r      <= 2;
 	   end
-		else begin
-		  // Robustness, only wait for a certain time, then punt
-		  if (timeout_r == 0) begin
-		    read_state_r    <= 3;
-		    timeout_r       <= 8'b11111111;
-		  end
-		  else begin
-		    timeout_r       <= timeout_r - 1;
-		  end
-		end
-    3: begin
-	   if (timeout_r == 0)
-		  read_state_r      <= 4;
-		else
-		  timeout_r         <= timeout_r - 1;
-	 end
-	 4: begin
+	 2: begin
       fifo_write_data_r   <= DATA;
       rfd_r               <= 0;
-		read_state_r        <= 5;
+		read_state_r        <= 3;
 	 end	 
-	 5:
+	 3:
 	   if (!fifo_full) begin
 		  fifo_write_en_r   <= 1;
-	     read_state_r      <= 6;
+	     read_state_r      <= 4;
 	   end
-	 6:
+	 4:
 	   begin
-	     read_state_r      <= 0;
 		  fifo_write_en_r   <= 0;
+		  read_state_r      <= 5;
+		  timeout_r         <= 8'hff;
 	   end
+    5:
+	   if (timeout_r == 0)
+		  read_state_r      <= 0;
+		else
+		  timeout_r         <= timeout_r - 1;	 
 	 endcase
   end
 end

@@ -103,15 +103,27 @@ sram_init (
 
 wire        LRFD;
 wire        LDAV;
+wire        LDAV_SLOW;
 wire [14:0] DATA;
 
 assign GPIO[1]  = LRFD;
 assign LDAV     = GPIO[0];
 assign DATA[14:0] = {
-GPIO[3], GPIO[2], GPIO[5], GPIO[4], GPIO[7],
-GPIO[6], GPIO[9], GPIO[8], GPIO[11], GPIO[10],
-GPIO[13], GPIO[12], GPIO[15], GPIO[14], 1'b0
+   GPIO[3],  GPIO[2],  GPIO[5],  GPIO[4],  GPIO[7],
+   GPIO[6],  GPIO[9],  GPIO[8], GPIO[11], GPIO[10],
+  GPIO[13], GPIO[12], GPIO[15], GPIO[14], 1'b0
 };
+
+
+slow_signal #(
+    .RATIO(256)
+) (
+    .clk(CLOCK_50),
+    .rst(rst),
+	 .src(LDAV),
+	 .slow(LDAV_SLOW),
+	 .cnt_r(LEDR[17:10])
+);
 
 //draw_tester(
 //   .clk       (CLOCK_50),
@@ -125,7 +137,7 @@ GPIO[13], GPIO[12], GPIO[15], GPIO[14], 1'b0
 hp1349a_top (
    .clk       (CLOCK_50),
    .rst       (rst),
-   .BUS_LDAV  (LDAV),
+   .BUS_LDAV  (LDAV_SLOW),
    .BUS_LRFD  (LRFD),
    .BUS_DATA  (DATA),
    .FB_EN     (cnt == 1 && init_done),
@@ -143,9 +155,12 @@ assign rst         = ~KEY[0];
 
 assign LEDG[0]     = rst;
 assign LEDG[1]     = KEY[1];
+
+assign LEDG[5]     = LDAV_SLOW;
+assign LEDG[6]     = LDAV;
 assign LEDG[7]     = LRFD;
-assign LEDG[6:5]   = 0;
-assign LEDR[17:3]  = 0;
+
+assign LEDR[9:3]   = 0;
 
 always @ (negedge CLOCK_50 or posedge rst) begin
   if (rst) begin
