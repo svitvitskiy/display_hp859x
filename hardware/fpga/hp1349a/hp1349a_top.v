@@ -1,12 +1,12 @@
-module hp1349a_top(clk, rst, BUS_LDAV, BUS_LRFD, BUS_DATA, FB_EN, FB_ADDR, FB_DQ, FB_CE_N, FB_OE_N, FB_WE_N, FB_UB_N, FB_LB_N, read_state_r);
+module hp1349a_top(clk, rst, draw_en, BUS_LDAV, BUS_LRFD, BUS_DATA, FB_ADDR, FB_DQ, FB_CE_N, FB_OE_N, FB_WE_N, FB_UB_N, FB_LB_N, read_state_r);
 input          clk;
 input          rst;
+input          draw_en;
 
 input          BUS_LDAV;
 output         BUS_LRFD;
 input   [14:0] BUS_DATA;
 
-input          FB_EN;
 output  [19:0] FB_ADDR;
 output  [15:0] FB_DQ;
 output         FB_CE_N;
@@ -76,9 +76,9 @@ hp1349a_control(
 );
 
 draw(
-   .clk50            (clk),
+   .clk25            (clk),
 	.rst              (rst),
-	.enable           (FB_EN),
+	.enable           (draw_en),
 	.x_from           (draw_x_from),
    .y_from           (draw_y_from),
    .x_to             (draw_x_to),

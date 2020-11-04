@@ -1,5 +1,5 @@
-module draw(clk50, rst, enable, x_from, y_from, x_to, y_to, draw_enable, busy, SRAM_ADDR, SRAM_DQ, SRAM_CE_N, SRAM_OE_N, SRAM_WE_N, SRAM_UB_N, SRAM_LB_N);
-input         clk50;
+module draw(clk25, rst, enable, x_from, y_from, x_to, y_to, draw_enable, busy, SRAM_ADDR, SRAM_DQ, SRAM_CE_N, SRAM_OE_N, SRAM_WE_N, SRAM_UB_N, SRAM_LB_N);
+input         clk25;
 input         rst;
 input         enable;
 input   [9:0] x_from;
@@ -9,7 +9,6 @@ input   [9:0] y_to;
 input         draw_enable;
 output        busy;
 
-// SRAM iface
 output [19:0] SRAM_ADDR;
 output [15:0] SRAM_DQ;
 output        SRAM_CE_N;
@@ -35,17 +34,17 @@ reg         [1:0] state_r;
 reg        [19:0] sram_addr_r;
 reg               sram_val_r;
 
-assign SRAM_CE_N = enable ? (sram_val_r ? 0 : 1)                   : 1'bz;
-assign SRAM_OE_N = enable ? 1                                      : 1'bz;
-assign SRAM_WE_N = enable ? (sram_val_r ? clk50 : 1)               : 1'bz;
-assign SRAM_UB_N = enable ? (sram_val_r ? 0 : 1)                   : 1'bz;
-assign SRAM_LB_N = enable ? (sram_val_r ? 0 : 1)                   : 1'bz;
-assign SRAM_DQ   = enable ? (sram_val_r ? sram_dq_r   : 16'hzzzz)  : 16'hzzzz;
-assign SRAM_ADDR = enable ? (sram_val_r ? sram_addr_r : 20'hzzzzz) : 20'hzzzzz;
+assign SRAM_ADDR = enable & sram_val_r ?  sram_addr_r : 20'hzzzzz;
+assign SRAM_DQ   = enable & sram_val_r ?    sram_dq_r : 16'hzzzz;
+assign SRAM_OE_N = enable & sram_val_r ?            1 : 1'bz;
+assign SRAM_WE_N = enable & sram_val_r ?        clk25 : 1'bz;
+assign SRAM_CE_N = enable & sram_val_r ?            0 : 1'bz;
+assign SRAM_LB_N = enable & sram_val_r ?       x_r[0] : 1'bz;
+assign SRAM_UB_N = enable & sram_val_r ?      ~x_r[0] : 1'bz;
 assign busy      = state_r != 0;
 
 
-always @ (posedge clk50 or posedge rst) begin
+always @ (posedge clk25 or posedge rst) begin
   if (rst) begin
     state_r           <= 0;
 	 sram_addr_r       <= 0;
@@ -78,8 +77,9 @@ always @ (posedge clk50 or posedge rst) begin
 		end		
 		2: begin
 		  if (enable) begin
-		    sram_addr_r   <= (y_r * 640 + x_r);
-		    sram_dq_r     <= 16'hffff;
+	       sram_addr_r <= {y_r, 8'h00} + {y_r, 6'h00} + x_r[9:1];
+			 //{r_br1, r_red1, r_green1, r_blue1,   r_br0, r_red0, r_green0, r_blue0}
+		    sram_dq_r     <= {3'b111, 2'b11, 2'b11, 1'b1, 3'b111, 2'b11, 2'b11, 1'b1};
 			 sram_val_r    <= 1;
 
           if (x_r == x_to_r && y_r == y_to_r) begin
