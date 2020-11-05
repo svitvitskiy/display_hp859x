@@ -64,7 +64,7 @@ display_top (
  .VGA_VS      (VGA_VS));
 
 slow_signal #(
-    .RATIO(32)
+    .RATIO(16)
 ) (
     .clk(CLOCK_50),
     .rst(rst),

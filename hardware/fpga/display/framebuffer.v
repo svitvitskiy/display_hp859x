@@ -1,4 +1,4 @@
-module framebuffer(clk, rst, enable, page_in, x, y, r_out, g_out, b_out, SRAM_ADDR, SRAM_DQ, SRAM_OE_N, SRAM_WE_N, SRAM_CE_N, SRAM_LB_N, SRAM_UB_N);
+module framebuffer(clk, rst, enable, page_in, x, y, fc, r_out, g_out, b_out, SRAM_ADDR, SRAM_DQ, SRAM_OE_N, SRAM_WE_N, SRAM_CE_N, SRAM_LB_N, SRAM_UB_N);
 
 parameter     WRITE_BACK = 1;
 
@@ -8,6 +8,7 @@ input         enable;
 input         page_in;
 input   [9:0] x;
 input   [9:0] y;
+input   [5:0] fc;
 output  [5:0] r_out;
 output  [5:0] g_out;
 output  [5:0] b_out;
@@ -98,13 +99,13 @@ always @ (negedge clk or posedge rst) begin
         r_sram_r  [{r_x,1'b1}] <= SRAM_DQ[12:11];
 		  r_sram_g  [{r_x,1'b1}] <= SRAM_DQ[10:9];
 		  r_sram_b  [{r_x,1'b1}] <= SRAM_DQ[8];
-		  r_sram_nbr[{r_x,1'b1}] <= SRAM_DQ[15:13] == 0 ? 0 : SRAM_DQ[15:13] - 1;
+		  r_sram_nbr[{r_x,1'b1}] <= SRAM_DQ[15:13] == 0 ? 0 : SRAM_DQ[15:13] - (fc[2:0] == 3'b111);
 		  
 		  r_sram_br [{r_x,1'b0}] <= SRAM_DQ[7:5];
 		  r_sram_r  [{r_x,1'b0}] <= SRAM_DQ[4:3];
 		  r_sram_g  [{r_x,1'b0}] <= SRAM_DQ[2:1];
 		  r_sram_b  [{r_x,1'b0}] <= SRAM_DQ[0];
-		  r_sram_nbr[{r_x,1'b0}] <= SRAM_DQ[7:5]   == 0 ? 0 : SRAM_DQ[7:5]   - 1;
+		  r_sram_nbr[{r_x,1'b0}] <= SRAM_DQ[7:5]   == 0 ? 0 : SRAM_DQ[7:5]   - (fc[2:0] == 3'b111);
 		end
 		
 		r_sram_r_o              <= {(br[2] ? r : 2'b00), 3'b000} + {(br[1] ? r : 2'b00), 2'b00} + {(br[0] ? r : 2'b00), 1'b0};

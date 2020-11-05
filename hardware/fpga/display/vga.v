@@ -1,8 +1,9 @@
-module vga(clk, rst, x_out, y_out, fb_en_out, draw_en_out, r_in, g_in, b_in, VGA_CLK, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS);
+module vga(clk, rst, x_out, y_out, fc_out, fb_en_out, draw_en_out, r_in, g_in, b_in, VGA_CLK, VGA_R, VGA_G, VGA_B, VGA_HS, VGA_VS);
 input        clk;
 input        rst;
 output [9:0] x_out;
 output [9:0] y_out;
+output [5:0] fc_out;
 output       fb_en_out; 
 output       draw_en_out;
 input  [5:0] r_in;
@@ -17,6 +18,7 @@ output       VGA_VS;
 
 reg  [9:0]  r_x;
 reg  [9:0]  r_y;
+reg  [5:0]  r_fc;
 reg         r_hsync;
 reg         r_vsync;
 reg         r_hden;
@@ -34,6 +36,7 @@ assign VGA_VS      = ~r_vsync;
 assign w_den       = r_hden & r_vden;
 assign fb_en_out   = w_den;
 assign draw_en_out = ~r_vden;
+assign fc_out      = r_fc;
 
 always @ (posedge clk or posedge rst) begin
   if (rst) begin
@@ -43,6 +46,7 @@ always @ (posedge clk or posedge rst) begin
 	 r_hsync          <= 0;
 	 r_hden           <= 0;
 	 r_vden           <= 0;
+	 r_fc             <= 0;
   end
   else begin
     case (r_x)
@@ -63,6 +67,7 @@ always @ (posedge clk or posedge rst) begin
       if (r_y == 524) begin
         r_x        <= 0;
         r_y        <= 0;
+		  r_fc       <= r_fc + 1;
       end
       else begin
         r_x        <= 0;

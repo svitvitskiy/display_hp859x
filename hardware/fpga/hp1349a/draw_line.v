@@ -1,4 +1,4 @@
-module draw(clk25, rst, enable, x_from, y_from, x_to, y_to, draw_enable, busy, SRAM_ADDR, SRAM_DQ, SRAM_CE_N, SRAM_OE_N, SRAM_WE_N, SRAM_UB_N, SRAM_LB_N);
+module draw_line(clk25, rst, enable, x_from, y_from, x_to, y_to, draw_enable, busy, SRAM_ADDR, SRAM_DQ, SRAM_CE_N, SRAM_OE_N, SRAM_WE_N, SRAM_UB_N, SRAM_LB_N);
 input         clk25;
 input         rst;
 input         enable;
@@ -39,8 +39,8 @@ assign SRAM_DQ   = enable & sram_val_r ?    sram_dq_r : 16'hzzzz;
 assign SRAM_OE_N = enable & sram_val_r ?            1 : 1'bz;
 assign SRAM_WE_N = enable & sram_val_r ?        clk25 : 1'bz;
 assign SRAM_CE_N = enable & sram_val_r ?            0 : 1'bz;
-assign SRAM_LB_N = enable & sram_val_r ?       x_r[0] : 1'bz;
-assign SRAM_UB_N = enable & sram_val_r ?      ~x_r[0] : 1'bz;
+assign SRAM_LB_N = enable & sram_val_r ?        x_r[0] : 1'bz;
+assign SRAM_UB_N = enable & sram_val_r ?       ~x_r[0] : 1'bz;
 assign busy      = state_r != 0;
 
 

@@ -21,6 +21,7 @@ wire       w_vga_draw;
 wire       w_page = 0;
 wire [9:0] w_vga_x;
 wire [9:0] w_vga_y;
+wire [5:0] w_vga_fc;
 wire [5:0] w_vga_r;
 wire [5:0] w_vga_g;
 wire [5:0] w_vga_b;
@@ -32,6 +33,7 @@ framebuffer(
   .page_in   (w_page),
   .x         (w_vga_x),
   .y         (w_vga_y),
+  .fc        (w_vga_fc),
   .r_out     (w_vga_r),
   .g_out     (w_vga_g),
   .b_out     (w_vga_b),
@@ -49,6 +51,7 @@ vga(
   .rst         (rst),
   .x_out       (w_vga_x),
   .y_out       (w_vga_y),
+  .fc_out      (w_vga_fc),
   .fb_en_out   (w_vga_draw),
   .draw_en_out (draw_en_out),
   .r_in        (w_vga_r),
